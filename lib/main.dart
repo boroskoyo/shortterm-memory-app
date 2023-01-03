@@ -42,8 +42,8 @@ class LockStatusPage extends StatefulWidget {
 
 class _LockStatusPageState extends State<LockStatusPage> {
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
-  late Future<bool> _isElevated;
   late Future<String> _lastUpdateTime;
+  bool _isElevated = true;
 
   Future<void> _lockDoor() async {
     final SharedPreferences prefs = await _prefs;
@@ -52,22 +52,17 @@ class _LockStatusPageState extends State<LockStatusPage> {
         DateFormat('MMM d, yyyy HH:MM:SS').format(DateTime.now()).toString();
     ;
     setState(() {
-      _isElevated = prefs.setBool('elevated', isElevated).then((bool success) {
-        return isElevated;
-      });
       _lastUpdateTime =
           prefs.setString('lastUpdate', lastUpdateTime).then((bool success) {
         return lastUpdateTime;
       });
+      _isElevated = !_isElevated;
     });
   }
 
   @override
   void initState() {
     super.initState();
-    _isElevated = _prefs.then((SharedPreferences prefs) {
-      return prefs.getBool('elevated') ?? true;
-    });
     _lastUpdateTime = _prefs.then((SharedPreferences prefs) {
       return prefs.getString('lastUpdate') ?? "none";
     });
@@ -95,57 +90,44 @@ class _LockStatusPageState extends State<LockStatusPage> {
                 }
               }),
           const Spacer(flex: 1),
-          FutureBuilder<bool>(
-              future: _isElevated,
-              builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-                switch (snapshot.connectionState) {
-                  case ConnectionState.waiting:
-                    return const CircularProgressIndicator();
-                  default:
-                    if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    } else {
-                      return GestureDetector(
-                          onLongPress: () {
-                            setState(() {
-                              _lockDoor();
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(
-                              milliseconds: 200,
-                            ),
-                            height: 200,
-                            width: 200,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(50),
-                              boxShadow: snapshot.data == true
-                                  ? [
-                                      const BoxShadow(
-                                        color: Colors.grey,
-                                        offset: Offset(4, 4),
-                                        blurRadius: 15,
-                                        spreadRadius: 1,
-                                      ),
-                                      const BoxShadow(
-                                        color: Colors.white,
-                                        offset: Offset(-4, -4),
-                                        blurRadius: 15,
-                                        spreadRadius: 1,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: const Icon(
-                              Icons.key,
-                              size: 48,
-                              color: Color.fromARGB(255, 85, 84, 84),
-                            ),
-                          ));
-                    }
-                }
-              }),
+          GestureDetector(
+              onLongPress: () {
+                setState(() {
+                  _lockDoor();
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(
+                  milliseconds: 200,
+                ),
+                height: 200,
+                width: 200,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(50),
+                  boxShadow: _isElevated == true
+                      ? [
+                          const BoxShadow(
+                            color: Colors.grey,
+                            offset: Offset(4, 4),
+                            blurRadius: 15,
+                            spreadRadius: 1,
+                          ),
+                          const BoxShadow(
+                            color: Colors.white,
+                            offset: Offset(-4, -4),
+                            blurRadius: 15,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: const Icon(
+                  Icons.key,
+                  size: 48,
+                  color: Color.fromARGB(255, 85, 84, 84),
+                ),
+              )),
           const Spacer()
         ]),
       ),
